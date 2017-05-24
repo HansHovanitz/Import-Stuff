@@ -27,10 +27,7 @@ var config = require('./config');
 var url = "mongodb://" + config.user + ":" + config.pw + "@" + config.uri;
 var quoteObj = {};
 
-var _user = null, 
-    _text = null,
-    _addedBy = null;
-    _dateAdded = null; 
+var _user, _text, _addedBy, _dateAdded = null;
 
 MongoClient.connect(url, function(err, db) {
     if (err) throw err;
@@ -47,7 +44,7 @@ MongoClient.connect(url, function(err, db) {
 
         _user = "@" + split[0];
         _text = "'" + split[1] + "'";
-        _addedBy = config._addedBy;
+        _addedBy = config.addedBy;
         _dateAdded = new Date().toISOString();
 
         quoteObj = { user : _user , text : _text , addedby : _addedBy, dateadded : _dateAdded};
