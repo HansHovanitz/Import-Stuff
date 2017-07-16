@@ -40,10 +40,11 @@ MongoClient.connect(url, function(err, db) {
 
     rl.on('line', function (line) {
 
-        var split = line.split(" ");
+        var split = line.indexOf(" ");
+        var splits = [line.slice(0,i), line.slice(i+1)];
 
-        _user = "@" + split[0];
-        _text = "'" + split[1] + "'";
+        _user = "@" + splits[0];
+        _text = "'" + splits[1] + "'";
         _addedBy = config.addedBy;
         _dateAdded = new Date().toISOString();
 
