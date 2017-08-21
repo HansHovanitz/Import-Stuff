@@ -27,38 +27,55 @@ var config = require('./config');
 var url = "mongodb://" + config.user + ":" + config.pw + "@" + config.uri;
 var quoteObj = {};
 
-var _user, _text, _addedBy, _dateAdded = null;
+var _user, _text, _addedBy, _dateAdded, _insertId = null;
 
 MongoClient.connect(url, function(err, db) {
     if (err) throw err;
-
-    var fs = require('fs'),
-        readline = require('readline'),
-        instream = fs.createReadStream(config.file),
-        outstream = new (require('stream'))(),
-        rl = readline.createInterface(instream, outstream); 
-
-    rl.on('line', function (line) {
-
-        var split = line.indexOf(" ");
-        var splits = [line.slice(0,i), line.slice(i+1)];
-
-        _user = "@" + splits[0];
-        _text = "'" + splits[1] + "'";
-        _addedBy = config.addedBy;
-        _dateAdded = new Date().toISOString();
-
-        quoteObj = { user : _user , text : _text , addedby : _addedBy, dateadded : _dateAdded};
-
-        db.collection("quotes").insertOne(quoteObj, function(err, res) {
+    db.collection("counters").findOne({}, function (err, result) {
         if (err) throw err;
-            console.log("record inserted.");
+
+        _insertId = result.seq;
+        console.log("initial seq id: " + _insertId)
+
+        var fs = require('fs'),
+            readline = require('readline'),
+            instream = fs.createReadStream(config.file),
+            outstream = new (require('stream'))(),
+            rl = readline.createInterface(instream, outstream); 
+
+        rl.on('line', function (line) {
+
+            var split = line.indexOf(" ");
+            var splits = [line.slice(0,split), line.slice(split+1)];
+
+            _user = "@" + splits[0];
+            _text = "'" + splits[1] + "'";
+            _addedBy = config.addedBy;
+            _dateAdded = new Date().toISOString();
+
+            quoteObj = { user : _user , text : _text , addedby : _addedBy, dateadded : _dateAdded, insertid : _insertId};
+            console.log(quoteObj);
+    
+            db.collection(config.database).insertOne(quoteObj, function(err, res) {
+            if (err) throw err;
+            }); 
+
+            _insertId++; 
+        });  
+        rl.on('close', function (line) {
+            db.collection("counters").updateOne({"_id" : "quotes"}, {$set: {"seq" : _insertId}}, function(err, result) {
+            if (err) throw err;
+            console.log("updated seq id");
+            });
+
+            console.log('done reading file.');
+            console.log("ending seq id " + _insertId);
+            console.log('closing db.')
+
+            db.close();
         });
-    });  
-    rl.on('close', function (line) {
-        console.log('done reading file.');
-        console.log('closing db.')
-        db.close();
     });
 });
+
+
 
